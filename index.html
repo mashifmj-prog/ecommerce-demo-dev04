@@ -585,7 +585,7 @@
             return colors[store] || 'gray';
         }
 
-        // Cart functions
+        // Cart functions - FIXED VERSION
         function addToCart(productId) {
             const product = productsData.find(p => p.id === productId);
             const existing = cart.find(item => item.id === productId);
@@ -610,12 +610,15 @@
             }, 1000);
         }
 
+        // FIXED: Remove from cart function
         function removeFromCart(productId) {
             cart = cart.filter(item => item.id !== productId);
             updateCartDisplay();
             saveCart();
+            renderCart(); // Re-render the cart to show updated items
         }
 
+        // FIXED: Update quantity function
         function updateQuantity(productId, change) {
             const item = cart.find(item => item.id === productId);
             if (item) {
@@ -625,48 +628,61 @@
                 } else {
                     updateCartDisplay();
                     saveCart();
+                    renderCart(); // Re-render to show updated quantities
                 }
             }
         }
 
+        // FIXED: Render cart with proper event handlers
         function renderCart() {
-            const items = document.getElementById('cart-items');
-            const total = document.getElementById('cart-total');
-            const empty = document.getElementById('empty-cart');
+            const itemsContainer = document.getElementById('cart-items');
+            const totalSection = document.getElementById('cart-total');
+            const emptySection = document.getElementById('empty-cart');
 
             if (cart.length === 0) {
-                items.innerHTML = '';
-                total.classList.add('hidden');
-                empty.classList.remove('hidden');
+                itemsContainer.innerHTML = '';
+                totalSection.classList.add('hidden');
+                emptySection.classList.remove('hidden');
                 return;
             }
 
-            empty.classList.add('hidden');
-            total.classList.remove('hidden');
+            emptySection.classList.add('hidden');
+            totalSection.classList.remove('hidden');
 
-            items.innerHTML = cart.map(item => `
+            // Create cart items HTML
+            itemsContainer.innerHTML = cart.map(item => `
                 <div class="bg-white rounded-lg shadow-sm border p-4">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center space-x-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-center">
+                        <div class="flex items-center space-x-4 mb-3 sm:mb-0">
                             <div class="image-container w-16 h-16 rounded">
                                 <img src="${item.image}" alt="${item.name}" class="product-image"
                                      onerror="this.src='https://via.placeholder.com/64x64/4ade80/ffffff?text=Product'">
                             </div>
                             <div>
                                 <h3 class="font-bold">${item.name}</h3>
-                                <p class="text-green-600">R${item.price.toFixed(2)} x ${item.quantity}</p>
+                                <p class="text-green-600">R${item.price.toFixed(2)} each</p>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="updateQuantity(${item.id}, -1)" class="bg-gray-200 w-8 h-8 rounded">-</button>
-                            <span class="font-bold">${item.quantity}</span>
-                            <button onclick="updateQuantity(${item.id}, 1)" class="bg-gray-200 w-8 h-8 rounded">+</button>
-                            <button onclick="removeFromCart(${item.id})" class="bg-red-500 text-white px-3 py-1 rounded ml-2">Remove</button>
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="updateQuantity(${item.id}, -1)" class="bg-gray-200 w-8 h-8 rounded flex items-center justify-center hover:bg-gray-300">
+                                    <i class="fas fa-minus text-sm"></i>
+                                </button>
+                                <span class="font-bold mx-2">${item.quantity}</span>
+                                <button onclick="updateQuantity(${item.id}, 1)" class="bg-gray-200 w-8 h-8 rounded flex items-center justify-center hover:bg-gray-300">
+                                    <i class="fas fa-plus text-sm"></i>
+                                </button>
+                            </div>
+                            <span class="font-bold w-20 text-right">R${(item.price * item.quantity).toFixed(2)}</span>
+                            <button onclick="removeFromCart(${item.id})" class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 transition">
+                                Remove
+                            </button>
                         </div>
                     </div>
                 </div>
             `).join('');
 
+            // Calculate and update totals
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const delivery = subtotal > 500 ? 0 : 50;
             const totalAmount = subtotal + delivery;
@@ -674,6 +690,11 @@
             document.getElementById('subtotal-amount').textContent = subtotal.toFixed(2);
             document.getElementById('delivery-cost').textContent = delivery.toFixed(2);
             document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
+
+            // Show free delivery message
+            if (subtotal > 500) {
+                document.getElementById('delivery-cost').innerHTML = '<span class="text-green-600">FREE!</span>';
+            }
         }
 
         function renderCheckout() {
